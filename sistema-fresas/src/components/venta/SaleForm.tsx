@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { createSale } from "@/app/actions/ventas";
 import { signOut } from "next-auth/react";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Product { id: string; name: string; }
 interface Size { id: string; name: string; order: number; }
@@ -151,7 +152,13 @@ export function SaleForm({ products, sizes, channels, prices, userName }: Props)
           className="h-16 text-lg font-bold mt-auto"
           size="lg"
         >
-          {loading ? "Registrando..." : "Confirmar Venta"}
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <Spinner /> Registrando...
+            </span>
+          ) : (
+            "Confirmar Venta"
+          )}
         </Button>
       </div>
     </div>

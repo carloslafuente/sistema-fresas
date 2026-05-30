@@ -5,6 +5,7 @@ import { createExpense, createExpenseCategory } from "@/app/actions/gastos";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Category { id: string; name: string; }
 
@@ -111,7 +112,7 @@ export function ExpenseForm({ categories: initial }: { categories: Category[] })
       {error && <p className="text-xs text-destructive">{error}</p>}
       {success && <p className="text-xs text-green-600">{success}</p>}
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Guardando..." : "Registrar gasto"}
+        {pending ? <span className="flex items-center gap-2"><Spinner /> Guardando...</span> : "Registrar gasto"}
       </Button>
     </form>
   );

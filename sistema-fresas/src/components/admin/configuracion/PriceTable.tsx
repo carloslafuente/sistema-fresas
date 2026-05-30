@@ -49,13 +49,13 @@ export function PriceTable({ products, sizes, channels, prices }: Props) {
       {products.map((product) => (
         <div key={product.id} className="space-y-2">
           <h3 className="font-medium text-sm">{product.name}</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
+          <div className="overflow-x-auto -mx-1 px-1">
+            <table className="text-sm border-collapse min-w-full">
               <thead>
                 <tr>
-                  <th className="text-left py-1 pr-3 text-muted-foreground font-normal">Tamaño</th>
+                  <th className="text-left py-1.5 pr-4 text-muted-foreground font-normal whitespace-nowrap">Tamaño</th>
                   {channels.map((ch) => (
-                    <th key={ch.id} className="text-center py-1 px-2 text-muted-foreground font-normal">
+                    <th key={ch.id} className="text-center py-1.5 px-2 text-muted-foreground font-normal whitespace-nowrap min-w-[80px]">
                       {ch.name}
                     </th>
                   ))}
@@ -64,22 +64,20 @@ export function PriceTable({ products, sizes, channels, prices }: Props) {
               <tbody>
                 {sortedSizes.map((size) => (
                   <tr key={size.id}>
-                    <td className="py-1 pr-3 font-medium">{size.name}</td>
+                    <td className="py-1.5 pr-4 font-medium whitespace-nowrap">{size.name}</td>
                     {channels.map((ch) => {
                       const key = `${product.id}-${size.id}-${ch.id}`;
                       return (
-                        <td key={ch.id} className="py-1 px-2 text-center">
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              defaultValue={getPrice(product.id, size.id, ch.id)}
-                              onBlur={(e) => handleBlur(product.id, size.id, ch.id, e.target.value)}
-                              className={`h-8 w-20 text-center text-sm ${saved[key] ? "border-green-400" : ""}`}
-                              min="0"
-                              step="0.50"
-                              disabled={pending}
-                            />
-                          </div>
+                        <td key={ch.id} className="py-1.5 px-2 text-center">
+                          <Input
+                            type="number"
+                            defaultValue={getPrice(product.id, size.id, ch.id)}
+                            onBlur={(e) => handleBlur(product.id, size.id, ch.id, e.target.value)}
+                            className={`h-9 w-20 text-center text-sm ${saved[key] ? "border-green-400" : ""}`}
+                            min="0"
+                            step="0.50"
+                            disabled={pending}
+                          />
                         </td>
                       );
                     })}

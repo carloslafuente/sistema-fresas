@@ -28,7 +28,7 @@ export function ThresholdEditor({ ingredients }: { ingredients: Ingredient[] }) 
     <div className="space-y-2 py-2">
       {ingredients.map((ing) => (
         <div key={ing.id} className="flex items-center gap-2">
-          <span className="text-sm w-36 shrink-0">{ing.name}</span>
+          <span className="text-sm flex-1 min-w-0 truncate">{ing.name}</span>
           <Input
             type="number"
             value={values[ing.id] ?? ""}

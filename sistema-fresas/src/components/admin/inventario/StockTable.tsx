@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Ingredient {
   id: string;
@@ -78,7 +79,7 @@ export function StockTable({ ingredients }: { ingredients: Ingredient[] }) {
                 disabled={pending}
                 className="h-10 px-3 whitespace-nowrap"
               >
-                + Ingresar
+                {pending ? <Spinner /> : "+ Ingresar"}
               </Button>
             </div>
             {error[ing.id] && <p className="text-xs text-destructive">{error[ing.id]}</p>}

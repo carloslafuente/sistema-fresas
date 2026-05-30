@@ -5,6 +5,7 @@ import { registerPlatformPayment } from "@/app/actions/cuentas";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 export function PaymentForm({ channelId, channelName }: { channelId: string; channelName: string }) {
   const [pending, startTransition] = useTransition();
@@ -66,7 +67,7 @@ export function PaymentForm({ channelId, channelName }: { channelId: string; cha
       {error && <p className="text-xs text-destructive">{error}</p>}
       {success && <p className="text-xs text-green-600">{success}</p>}
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Registrando..." : "Registrar pago"}
+        {pending ? <span className="flex items-center gap-2"><Spinner /> Registrando...</span> : "Registrar pago"}
       </Button>
     </form>
   );

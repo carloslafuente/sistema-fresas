@@ -46,7 +46,7 @@ export function RecipeEditor({ recipes, ingredients }: { recipes: Recipe[]; ingr
 
   return (
     <Tabs defaultValue={products[0]}>
-      <TabsList className="mb-4 flex-wrap h-auto">
+      <TabsList className="mb-4 w-full overflow-x-auto no-scrollbar flex h-auto flex-nowrap justify-start gap-1 bg-muted p-1">
         {products.map((p) => (
           <TabsTrigger key={p} value={p} className="text-xs">
             {p}
@@ -70,7 +70,7 @@ export function RecipeEditor({ recipes, ingredients }: { recipes: Recipe[]; ingr
                 <div className="space-y-2">
                   {ingredients.map((ing) => (
                     <div key={ing.id} className="flex items-center gap-2">
-                      <span className="text-sm w-32 shrink-0">{ing.name}</span>
+                      <span className="text-sm flex-1 min-w-0 truncate">{ing.name}</span>
                       <Input
                         type="number"
                         value={values[recipe.id]?.[ing.id] ?? ""}
@@ -81,10 +81,10 @@ export function RecipeEditor({ recipes, ingredients }: { recipes: Recipe[]; ingr
                           }))
                         }
                         placeholder="0"
-                        className="h-9 w-24 text-sm"
+                        className="h-9 w-20 shrink-0 text-sm"
                         min="0"
                       />
-                      <span className="text-xs text-muted-foreground">{ing.unit}</span>
+                      <span className="text-xs text-muted-foreground w-10 shrink-0">{ing.unit}</span>
                     </div>
                   ))}
                 </div>
