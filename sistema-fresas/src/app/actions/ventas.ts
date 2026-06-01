@@ -5,101 +5,116 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { todayStart, todayEnd } from "@/lib/utils";
 
-type CreateSaleInput = {
-  productId: string;
-  sizeId: string;
-  channelId: string;
-  paymentMethod?: "EFECTIVO" | "QR";
-};
-
 type ActionResult<T = undefined> =
   | { success: true; data?: T }
   | { success: false; error: string };
 
-export async function createSale(input: CreateSaleInput): Promise<ActionResult> {
+type CartItem = {
+  productId: string;
+  sizeId: string;
+  quantity: number; // number of units (≥ 1)
+};
+
+export async function createOrder(input: {
+  items: CartItem[];
+  channelId: string;
+  paymentMethod?: "EFECTIVO" | "QR";
+}): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session) return { success: false, error: "No autenticado" };
 
-  const { productId, sizeId, channelId, paymentMethod } = input;
+  const { items, channelId, paymentMethod } = input;
 
-  // Look up price
-  const price = await prisma.price.findUnique({
-    where: { productId_sizeId_channelId: { productId, sizeId, channelId } },
-  });
-  if (!price) return { success: false, error: "Precio no configurado para esta combinación" };
+  const activeItems = items.filter((i) => i.quantity > 0);
+  if (activeItems.length === 0) return { success: false, error: "Agrega al menos un producto" };
 
-  // Look up channel
   const channel = await prisma.channel.findUnique({ where: { id: channelId } });
   if (!channel) return { success: false, error: "Canal no encontrado" };
-
-  // Validate payment method for local channel
   if (!channel.isDelivery && !paymentMethod) {
-    return { success: false, error: "Selecciona método de pago para ventas locales" };
+    return { success: false, error: "Selecciona método de pago" };
   }
 
-  // Look up recipe + items
-  const recipe = await prisma.recipe.findUnique({
-    where: { productId_sizeId: { productId, sizeId } },
-    include: { items: { include: { ingredient: true } } },
-  });
-  if (!recipe || recipe.items.length === 0) {
-    return { success: false, error: "Receta no configurada para este producto" };
+  // Load all prices and recipes needed for this order
+  const [prices, recipes] = await Promise.all([
+    prisma.price.findMany({
+      where: { channelId, OR: activeItems.map((i) => ({ productId: i.productId, sizeId: i.sizeId })) },
+    }),
+    prisma.recipe.findMany({
+      where: { OR: activeItems.map((i) => ({ productId: i.productId, sizeId: i.sizeId })) },
+      include: { items: true },
+    }),
+  ]);
+
+  // Validate all prices exist
+  for (const item of activeItems) {
+    const price = prices.find((p) => p.productId === item.productId && p.sizeId === item.sizeId);
+    if (!price) return { success: false, error: "Precio no configurado para algún producto" };
+  }
+
+  // Aggregate total ingredient deductions across all items
+  const ingredientDelta: Record<string, number> = {};
+  for (const item of activeItems) {
+    const recipe = recipes.find((r) => r.productId === item.productId && r.sizeId === item.sizeId);
+    if (!recipe || recipe.items.length === 0) {
+      return { success: false, error: "Receta no configurada para algún producto" };
+    }
+    for (const ri of recipe.items) {
+      ingredientDelta[ri.ingredientId] =
+        (ingredientDelta[ri.ingredientId] ?? 0) + Number(ri.quantity) * item.quantity;
+    }
   }
 
   try {
     await prisma.$transaction(
       async (tx) => {
-        // Lock and verify stock for all ingredients
-        for (const item of recipe.items) {
-          const ing = await tx.ingredient.findUnique({ where: { id: item.ingredientId } });
-          if (!ing) throw new Error(`Insumo ${item.ingredient.name} no encontrado`);
-          if (Number(ing.stock) < Number(item.quantity)) {
-            throw new Error(`Stock insuficiente: ${item.ingredient.name} (disponible: ${ing.stock} ${ing.unit})`);
-          }
-        }
-
-        // Create sale
-        const sale = await tx.sale.create({
-          data: {
-            userId: session.user.id,
-            productId,
-            sizeId,
-            channelId,
-            paymentMethod: !channel.isDelivery ? paymentMethod : undefined,
-            amount: price.amount,
-            status: "ACTIVE",
-          },
-        });
-
-        // Create ingredient log + deduct stock
-        for (const item of recipe.items) {
-          await tx.saleIngredientLog.create({
-            data: {
-              saleId: sale.id,
-              ingredientId: item.ingredientId,
-              quantity: item.quantity,
-            },
-          });
+        // Deduct stock for each ingredient (stock can go negative — intentional)
+        for (const [ingredientId, delta] of Object.entries(ingredientDelta)) {
           await tx.ingredient.update({
-            where: { id: item.ingredientId },
-            data: { stock: { decrement: item.quantity } },
+            where: { id: ingredientId },
+            data: { stock: { decrement: delta } },
           });
         }
 
-        // Create account receivable for delivery channels
-        if (channel.isDelivery) {
-          const commission = Number(channel.commissionPct);
-          const gross = Number(price.amount);
-          const net = gross * (1 - commission / 100);
-          await tx.accountReceivable.create({
-            data: {
-              saleId: sale.id,
-              channelId,
-              grossAmount: gross,
-              commissionPct: commission,
-              netAmount: net,
-            },
-          });
+        // Create one Sale record per unit per item line
+        for (const item of activeItems) {
+          const price = prices.find((p) => p.productId === item.productId && p.sizeId === item.sizeId)!;
+          const recipe = recipes.find((r) => r.productId === item.productId && r.sizeId === item.sizeId)!;
+
+          for (let unit = 0; unit < item.quantity; unit++) {
+            const sale = await tx.sale.create({
+              data: {
+                userId: session.user.id,
+                productId: item.productId,
+                sizeId: item.sizeId,
+                channelId,
+                paymentMethod: !channel.isDelivery ? paymentMethod : undefined,
+                amount: price.amount,
+                status: "ACTIVE",
+              },
+            });
+
+            // Ingredient log snapshot per unit
+            for (const ri of recipe.items) {
+              await tx.saleIngredientLog.create({
+                data: { saleId: sale.id, ingredientId: ri.ingredientId, quantity: ri.quantity },
+              });
+            }
+
+            // Account receivable for delivery channels
+            if (channel.isDelivery) {
+              const commission = Number(channel.commissionPct);
+              const gross = Number(price.amount);
+              await tx.accountReceivable.create({
+                data: {
+                  saleId: sale.id,
+                  channelId,
+                  grossAmount: gross,
+                  commissionPct: commission,
+                  netAmount: gross * (1 - commission / 100),
+                },
+              });
+            }
+          }
         }
       },
       { isolationLevel: "Serializable" }
@@ -107,7 +122,7 @@ export async function createSale(input: CreateSaleInput): Promise<ActionResult> 
 
     return { success: true };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error al registrar venta";
+    const msg = e instanceof Error ? e.message : "Error al registrar orden";
     return { success: false, error: msg };
   }
 }
@@ -130,18 +145,12 @@ export async function voidSale(
   if (sale.status !== "ACTIVE") return { success: false, error: "La venta ya fue anulada" };
 
   const now = new Date();
-  const start = todayStart();
-  const end = todayEnd();
-  if (sale.createdAt < start || sale.createdAt > end) {
+  if (sale.createdAt < todayStart() || sale.createdAt > todayEnd()) {
     return { success: false, error: "Solo se pueden anular ventas del día en curso" };
   }
 
-  // Warn if AR is already paid
   if (!forceVoid && sale.accountReceivable?.status === "PAID") {
-    return {
-      success: false,
-      error: "WARN:Esta cuenta ya fue cobrada. Usa forceVoid=true para continuar.",
-    };
+    return { success: false, error: "WARN:Esta cuenta ya fue cobrada. Usa forceVoid=true para continuar." };
   }
 
   await prisma.$transaction(async (tx) => {
@@ -149,7 +158,6 @@ export async function voidSale(
       where: { id: saleId },
       data: { status: "VOIDED", voidedAt: now, voidedBy: session.user.id },
     });
-
     for (const log of sale.ingredientLogs) {
       await tx.ingredient.update({
         where: { id: log.ingredientId },
