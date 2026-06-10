@@ -3,6 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -27,6 +28,7 @@ export async function createExpense(input: {
     },
   });
 
+  revalidatePath("/admin/gastos");
   return { success: true };
 }
 
@@ -41,5 +43,6 @@ export async function createExpenseCategory(name: string): Promise<ActionResult>
   if (existing) return { success: false, error: "La categoría ya existe" };
 
   await prisma.expenseCategory.create({ data: { name: trimmed } });
+  revalidatePath("/admin/gastos");
   return { success: true };
 }

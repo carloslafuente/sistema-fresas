@@ -3,6 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -31,6 +32,7 @@ export async function addStock(input: {
     }),
   ]);
 
+  revalidatePath("/admin/inventario");
   return { success: true };
 }
 
@@ -64,6 +66,7 @@ export async function adjustStock(input: {
     }),
   ]);
 
+  revalidatePath("/admin/inventario");
   return { success: true };
 }
 
@@ -92,5 +95,6 @@ export async function updateRecipeItem(input: {
     },
   });
 
+  revalidatePath("/admin/inventario");
   return { success: true };
 }

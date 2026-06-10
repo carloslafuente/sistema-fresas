@@ -3,6 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -63,5 +64,6 @@ export async function registerPlatformPayment(input: {
     }
   });
 
+  revalidatePath("/admin/cuentas-por-cobrar");
   return { success: true };
 }

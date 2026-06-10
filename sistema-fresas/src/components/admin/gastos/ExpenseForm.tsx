@@ -9,12 +9,11 @@ import { Spinner } from "@/components/ui/spinner";
 
 interface Category { id: string; name: string; }
 
-export function ExpenseForm({ categories: initial }: { categories: Category[] }) {
+export function ExpenseForm({ categories }: { categories: Category[] }) {
   const [pending, startTransition] = useTransition();
-  const [categories] = useState(initial);
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState("");
-  const [categoryId, setCategoryId] = useState(initial[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -25,8 +24,7 @@ export function ExpenseForm({ categories: initial }: { categories: Category[] })
     startTransition(async () => {
       const res = await createExpenseCategory(newCat);
       if (!res.success) { setError(res.error); return; }
-      // Reload page to get fresh categories — simple approach
-      window.location.reload();
+      setNewCat("");
     });
   }
 
