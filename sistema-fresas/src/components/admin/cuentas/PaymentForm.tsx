@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { registerPlatformPayment } from "@/app/actions/cuentas";
+import { toLocalDateString } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 export function PaymentForm({ channelId, channelName }: { channelId: string; channelName: string }) {
   const [pending, startTransition] = useTransition();
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => toLocalDateString(new Date()));
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 

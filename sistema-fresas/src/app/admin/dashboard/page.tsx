@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { todayStart, todayEnd } from "@/lib/utils";
+import { todayStart, todayEnd, todayLocalDateString, dateOnlyRangeStart, dateOnlyRangeEnd } from "@/lib/utils";
 import { InventoryBlock } from "@/components/admin/dashboard/InventoryBlock";
 import { SalesBlock } from "@/components/admin/dashboard/SalesBlock";
 import { FinancialBlock } from "@/components/admin/dashboard/FinancialBlock";
@@ -9,6 +9,10 @@ export default async function DashboardPage() {
   const end = todayEnd();
   const sevenDaysAgo = new Date(start);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const today = todayLocalDateString();
+  const expenseStart = dateOnlyRangeStart(today);
+  const expenseEnd = dateOnlyRangeEnd(today);
 
   const [ingredients, todaySales, last7Sales, todayExpenses, pendingARs, channels] =
     await Promise.all([
@@ -21,7 +25,7 @@ export default async function DashboardPage() {
         where: { createdAt: { gte: sevenDaysAgo, lte: end }, status: "ACTIVE" },
       }),
       prisma.expense.findMany({
-        where: { date: { gte: start, lte: end } },
+        where: { date: { gte: expenseStart, lte: expenseEnd } },
       }),
       prisma.accountReceivable.findMany({
         where: { status: "PENDING", sale: { status: "ACTIVE" } },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { dateRangeStart, dateRangeEnd, toAppDateString } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -10,8 +11,8 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl;
-  const from = searchParams.get("from") ? new Date(searchParams.get("from")!) : new Date(0);
-  const to = searchParams.get("to") ? new Date(searchParams.get("to")!) : new Date();
+  const from = searchParams.get("from") ? dateRangeStart(searchParams.get("from")!) : new Date(0);
+  const to = searchParams.get("to") ? dateRangeEnd(searchParams.get("to")!) : new Date();
   const channelId = searchParams.get("channelId");
 
   const ars = await prisma.accountReceivable.findMany({
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
     ["fecha_venta", "canal", "monto_bruto", "comision_pct", "monto_neto", "estado", "fecha_pago"].join(","),
     ...ars.map((ar) =>
       [
-        ar.sale.createdAt.toISOString().split("T")[0],
+        toAppDateString(ar.sale.createdAt),
         ar.channel.name,
         Number(ar.grossAmount).toFixed(2),
         Number(ar.commissionPct).toFixed(2),

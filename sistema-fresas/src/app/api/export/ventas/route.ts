@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { dateRangeStart, dateRangeEnd, toAppDateString, toAppTimeString } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -10,8 +11,8 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl;
-  const from = searchParams.get("from") ? new Date(searchParams.get("from")!) : new Date(0);
-  const to = searchParams.get("to") ? new Date(searchParams.get("to")!) : new Date();
+  const from = searchParams.get("from") ? dateRangeStart(searchParams.get("from")!) : new Date(0);
+  const to = searchParams.get("to") ? dateRangeEnd(searchParams.get("to")!) : new Date();
 
   const sales = await prisma.sale.findMany({
     where: { status: "ACTIVE", createdAt: { gte: from, lte: to } },
@@ -23,8 +24,8 @@ export async function GET(req: NextRequest) {
     ["fecha", "hora", "producto", "tamaño", "canal", "metodo_pago", "monto"].join(","),
     ...sales.map((s) =>
       [
-        s.createdAt.toISOString().split("T")[0],
-        s.createdAt.toTimeString().slice(0, 5),
+        toAppDateString(s.createdAt),
+        toAppTimeString(s.createdAt),
         `"${s.product.name}"`,
         s.size.name,
         s.channel.name,

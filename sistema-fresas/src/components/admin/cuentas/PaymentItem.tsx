@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDateUTC } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -63,7 +63,7 @@ export function PaymentItem({ payment }: { payment: Payment }) {
   return (
     <div className="border rounded-lg p-3 text-sm space-y-1">
       <div className="flex justify-between items-start gap-2">
-        <span className="text-muted-foreground">{formatDate(payment.receivedAt)}</span>
+        <span className="text-muted-foreground">{formatDateUTC(payment.receivedAt)}</span>
         <span className="font-medium">{formatCurrency(payment.receivedAmount)}</span>
       </div>
       {payment.excessAmount > 0 && (

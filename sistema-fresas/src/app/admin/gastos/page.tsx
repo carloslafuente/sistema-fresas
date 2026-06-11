@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ExpenseForm } from "@/components/admin/gastos/ExpenseForm";
 import { ExpenseItem } from "@/components/admin/gastos/ExpenseItem";
 import { DateRangeFilter } from "@/components/admin/DateRangeFilter";
-import { formatCurrency, toLocalDateString, dateOnlyRangeStart, dateOnlyRangeEnd } from "@/lib/utils";
+import { formatCurrency, todayLocalDateString, dateOnlyRangeStart, dateOnlyRangeEnd } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +12,7 @@ export default async function GastosPage({
   searchParams: { from?: string; to?: string };
 }) {
   const hasFilter = Boolean(searchParams.from || searchParams.to);
-  const today = toLocalDateString(new Date());
+  const today = todayLocalDateString();
   const start = dateOnlyRangeStart(searchParams.from ?? today);
   const end = dateOnlyRangeEnd(searchParams.to ?? today);
 

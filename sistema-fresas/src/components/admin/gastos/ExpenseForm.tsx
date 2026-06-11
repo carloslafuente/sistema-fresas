@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createExpense, createExpenseCategory } from "@/app/actions/gastos";
+import { toLocalDateString } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ export function ExpenseForm({ categories }: { categories: Category[] }) {
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => toLocalDateString(new Date()));
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [newCat, setNewCat] = useState("");
