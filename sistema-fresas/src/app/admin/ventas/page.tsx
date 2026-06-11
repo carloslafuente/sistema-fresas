@@ -1,18 +1,27 @@
 import { prisma } from "@/lib/prisma";
 import { SalesTable } from "@/components/admin/ventas/SalesTable";
-import { todayStart, todayEnd } from "@/lib/utils";
+import { DateRangeFilter } from "@/components/admin/DateRangeFilter";
+import { todayStart, todayEnd, dateRangeStart, dateRangeEnd } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default async function VentasAdminPage() {
-  const start = todayStart();
-  const end = todayEnd();
+export default async function VentasAdminPage({
+  searchParams,
+}: {
+  searchParams: { from?: string; to?: string };
+}) {
+  const hasFilter = Boolean(searchParams.from || searchParams.to);
+  const start = searchParams.from ? dateRangeStart(searchParams.from) : todayStart();
+  const end = searchParams.to ? dateRangeEnd(searchParams.to) : todayEnd();
 
   const sales = await prisma.sale.findMany({
+    where: hasFilter ? { createdAt: { gte: start, lte: end } } : undefined,
     include: { product: true, size: true, channel: true },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: hasFilter ? 500 : 100,
   });
+
+  const todayRange = { start: todayStart(), end: todayEnd() };
 
   const plain = sales.map((s) => ({
     id: s.id,
@@ -23,11 +32,30 @@ export default async function VentasAdminPage() {
     amount: Number(s.amount),
     status: s.status as "ACTIVE" | "VOIDED",
     createdAt: s.createdAt.toISOString(),
-    isToday: s.createdAt >= start && s.createdAt <= end,
+    isToday: s.createdAt >= todayRange.start && s.createdAt <= todayRange.end,
   }));
 
-  const todayActive = plain.filter((s) => s.isToday && s.status === "ACTIVE");
-  const todayTotal = todayActive.reduce((sum, s) => sum + s.amount, 0);
+  let summaryLabel: string;
+  let summaryCount: number;
+  let summaryTotal: number;
+
+  if (hasFilter) {
+    const active = plain.filter((s) => s.status === "ACTIVE");
+    summaryLabel = "Total del periodo";
+    summaryCount = active.length;
+    summaryTotal = active.reduce((sum, s) => sum + s.amount, 0);
+  } else {
+    const todayActive = plain.filter((s) => s.isToday && s.status === "ACTIVE");
+    summaryLabel = "Hoy";
+    summaryCount = todayActive.length;
+    summaryTotal = todayActive.reduce((sum, s) => sum + s.amount, 0);
+  }
+
+  const exportParams = new URLSearchParams();
+  if (searchParams.from) exportParams.set("from", searchParams.from);
+  if (searchParams.to) exportParams.set("to", searchParams.to);
+  const exportQs = exportParams.toString();
+  const exportHref = `/api/export/ventas${exportQs ? `?${exportQs}` : ""}`;
 
   return (
     <div className="space-y-4 py-4">
@@ -35,14 +63,16 @@ export default async function VentasAdminPage() {
         <h1 className="text-xl font-bold">Ventas</h1>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link href="/api/export/ventas">Exportar CSV</Link>
+            <Link href={exportHref}>Exportar CSV</Link>
           </Button>
         </div>
       </div>
 
+      <DateRangeFilter />
+
       <div className="bg-secondary rounded-xl p-4 text-center">
-        <p className="text-sm text-muted-foreground">Hoy ({todayActive.length} ventas)</p>
-        <p className="text-2xl font-bold">${todayTotal.toFixed(2)}</p>
+        <p className="text-sm text-muted-foreground">{summaryLabel} ({summaryCount} ventas)</p>
+        <p className="text-2xl font-bold">${summaryTotal.toFixed(2)}</p>
       </div>
 
       <SalesTable sales={plain} />

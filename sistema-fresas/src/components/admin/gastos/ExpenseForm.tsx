@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Category { id: string; name: string; }
 
@@ -74,13 +75,7 @@ export function ExpenseForm({ categories }: { categories: Category[] }) {
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Fecha</Label>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="h-10"
-            required
-          />
+          <DatePicker value={date} onChange={setDate} />
         </div>
       </div>
       <div className="space-y-1">

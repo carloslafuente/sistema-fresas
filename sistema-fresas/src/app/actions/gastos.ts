@@ -32,6 +32,51 @@ export async function createExpense(input: {
   return { success: true };
 }
 
+export async function updateExpense(
+  id: string,
+  input: {
+    description: string;
+    amount: number;
+    categoryId: string;
+    date: string;
+  }
+): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") return { success: false, error: "Sin permisos" };
+
+  if (input.amount <= 0) return { success: false, error: "El monto debe ser mayor a 0" };
+  if (!input.description.trim()) return { success: false, error: "La descripción es requerida" };
+
+  const existing = await prisma.expense.findUnique({ where: { id } });
+  if (!existing) return { success: false, error: "Gasto no encontrado" };
+
+  await prisma.expense.update({
+    where: { id },
+    data: {
+      description: input.description.trim(),
+      amount: input.amount,
+      categoryId: input.categoryId,
+      date: new Date(input.date),
+    },
+  });
+
+  revalidatePath("/admin/gastos");
+  return { success: true };
+}
+
+export async function deleteExpense(id: string): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") return { success: false, error: "Sin permisos" };
+
+  const existing = await prisma.expense.findUnique({ where: { id } });
+  if (!existing) return { success: false, error: "Gasto no encontrado" };
+
+  await prisma.expense.delete({ where: { id } });
+
+  revalidatePath("/admin/gastos");
+  return { success: true };
+}
+
 export async function createExpenseCategory(name: string): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") return { success: false, error: "Sin permisos" };

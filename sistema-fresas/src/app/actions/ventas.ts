@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { todayStart, todayEnd } from "@/lib/utils";
+import { revalidatePath } from "next/cache";
 
 type ActionResult<T = undefined> =
   | { success: true; data?: T }
@@ -165,6 +166,10 @@ export async function voidSale(
       });
     }
   });
+
+  revalidatePath("/admin/ventas");
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/cuentas-por-cobrar");
 
   return { success: true };
 }

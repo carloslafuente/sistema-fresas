@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { PaymentItem } from "@/components/admin/cuentas/PaymentItem";
 
 interface AR {
   id: string;
@@ -57,17 +57,7 @@ export function PlatformBalance({ channelName, pendingTotal, pendingARs, payment
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Pagos recibidos</h3>
           {payments.map((p) => (
-            <div key={p.id} className="border rounded-lg p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{formatDate(p.receivedAt)}</span>
-                <span className="font-medium">{formatCurrency(p.receivedAmount)}</span>
-              </div>
-              {p.excessAmount > 0 && (
-                <Badge variant="outline" className="text-xs mt-1">
-                  Excedente: {formatCurrency(p.excessAmount)}
-                </Badge>
-              )}
-            </div>
+            <PaymentItem key={p.id} payment={p} />
           ))}
         </div>
       )}

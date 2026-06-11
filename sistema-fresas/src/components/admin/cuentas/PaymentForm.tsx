@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export function PaymentForm({ channelId, channelName }: { channelId: string; channelName: string }) {
   const [pending, startTransition] = useTransition();
@@ -55,13 +56,7 @@ export function PaymentForm({ channelId, channelName }: { channelId: string; cha
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Fecha de pago</Label>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="h-10"
-            required
-          />
+          <DatePicker value={date} onChange={setDate} />
         </div>
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
